@@ -74,7 +74,7 @@ namespace ompl
                 addIntermediateStates_ = addIntermediateStates;
             }
 
-            /** \brief Set the range the planner is supposed to use.
+            /** \brief Set the rance the planner is supposed to use.
 
                 This parameter greatly influences the runtime of the
                 algorithm. It represents the maximum length of a

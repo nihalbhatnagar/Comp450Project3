@@ -12,24 +12,122 @@
 // Your random tree planner
 #include "RTP.h"
 
+#include <ompl/geometric/SimpleSetup.h>
+#include <ompl/base/State.h>
+
 void planPoint(const std::vector<Rectangle> &obstacles)
 {
-    // TODO: Use your implementation of RTP to plan for a point robot.
+    namespace ob = ompl::base;
+    namespace og = ompl::geometric;
+    // construct the state space we are planning in
+    auto space(std::make_shared<ob::SE2StateSpace>());
+    ob::RealVectorBounds bounds(2);
+    bounds.setLow(-1);
+    bounds.setHigh(1);
+ 
+    space->setBounds(bounds);
+
+    og::SimpleSetup ss(space);
+    ss.setStateValidityChecker([&obstacles](const ob::State *state) { return isValidStatePoint(state, obstacles); });
+
+    ob::ScopedState<> start(space);
+    start.random();
+
+    ob::ScopedState<> goal(space);
+    goal.random();
+
+    ss.setStartAndGoalStates(start, goal);
+
+    // RTP planner(space)
+    auto planner = std::make_shared<ompl::geometric::RTP>(ss.getSpaceInformation());
+    ss.setPlanner(planner);
+
+    ob::PlannerStatus solved = ss.solve(1.0);
+
+
+    if (solved)
+    {
+        std::cout << "Found solution:" << std::endl;
+        // print the path to screen
+        ss.simplifySolution();
+        ss.getSolutionPath().print(std::cout);
+    }
 }
 
 void planBox(const std::vector<Rectangle> &obstacles)
 {
+    namespace ob = ompl::base;
+    namespace og = ompl::geometric;
     // TODO: Use your implementation of RTP to plan for a rotating square robot.
+    // construct the state space we are planning in
+    auto space(std::make_shared<ob::SE2StateSpace>());
+    double sideLength = 3;
+    ob::RealVectorBounds bounds(2);
+    bounds.setLow(-1);
+    bounds.setHigh(1);
+ 
+    space->setBounds(bounds);
+
+    og::SimpleSetup ss(space);
+    ss.setStateValidityChecker([&obstacles, sideLength](const ob::State *state) { return isValidStateSquare(state, sideLength, obstacles); });
+
+    ob::ScopedState<> start(space);
+    start.random();
+
+    ob::ScopedState<> goal(space);
+    goal.random();
+
+    ss.setStartAndGoalStates(start, goal);
+
+    // RTP planner(space)
+    auto planner = std::make_shared<ompl::geometric::RTP>(ss.getSpaceInformation());
+    ss.setPlanner(planner);
+
+    ob::PlannerStatus solved = ss.solve(1.0);
+
+
+    if (solved)
+    {
+        std::cout << "Found solution:" << std::endl;
+        // print the path to screen
+        ss.simplifySolution();
+        ss.getSolutionPath().print(std::cout);
+    }
 }
 
 void makeEnvironment1(std::vector<Rectangle> &obstacles)
 {
-    // TODO: Fill in the vector of rectangles with your first environment.
+    Rectangle obstacle1;
+    obstacle1.x = 1.0;
+    obstacle1.y = 2.0;
+    obstacle1.height = 5.0;
+    obstacle1.width = 15.0;
+    obstacles.push_back(obstacle1);
+
+    Rectangle obstacle2;
+    obstacle2.x = 13.0;
+    obstacle2.y = 8.0;
+    obstacle2.height = 20.0;
+    obstacle2.width = 9.0;
+    obstacles.push_back(obstacle2);
 }
 
 void makeEnvironment2(std::vector<Rectangle> &obstacles)
 {
     // TODO: Fill in the vector of rectangles with your second environment.
+    Rectangle obstacle1;
+    obstacle1.x = 1.0;
+    obstacle1.y = 2.0;
+    obstacle1.height = 5.0;
+    obstacle1.width = 15.0;
+    obstacles.push_back(obstacle1);
+
+    Rectangle obstacle2;
+    obstacle2.x = 13.0;
+    obstacle2.y = 8.0;
+    obstacle2.height = 20.0;
+    obstacle2.width = 9.0;
+    obstacles.push_back(obstacle2);
 }
 
 int main(int /* argc */, char ** /* argv */)

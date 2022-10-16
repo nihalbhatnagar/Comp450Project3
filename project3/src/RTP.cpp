@@ -4,31 +4,27 @@
 // Authors: FILL ME OUT!!
 //////////////////////////////////////
 
-#include "ompl/geometric/planners/rrt/RRT.h"
+#include "RTP.h"
 #include <limits>
-#include "ompl/base/goals/GoalSampleableRegion.h"
-#include "ompl/tools/config/SelfConfig.h"
+#include <ompl/base/goals/GoalSampleableRegion.h>
+#include <ompl/tools/config/SelfConfig.h>
 
-ompl::geometric::RRT::RRT(const base::SpaceInformationPtr &si, bool addIntermediateStates)
-  : base::Planner(si, addIntermediateStates ? "RRTintermediate" : "RRT")
+ompl::geometric::RTP::RTP(const base::SpaceInformationPtr &si)
+  : base::Planner(si, "RTP")
 {
     specs_.approximateSolutions = true;
     specs_.directed = true;
 
-    Planner::declareParam<double>("range", this, &RRT::setRange, &RRT::getRange, "0.:1.:10000.");
-    Planner::declareParam<double>("goal_bias", this, &RRT::setGoalBias, &RRT::getGoalBias, "0.:.05:1.");
-    Planner::declareParam<bool>("intermediate_states", this, &RRT::setIntermediateStates, &RRT::getIntermediateStates,
-                                "0,1");
-
-    addIntermediateStates_ = addIntermediateStates;
+    Planner::declareParam<double>("range", this, &RTP::setRange, &RTP::getRange, "0.:1.:10000.");
+    Planner::declareParam<double>("goal_bias", this, &RTP::setGoalBias, &RTP::getGoalBias, "0.:.05:1.");
 }
 
-ompl::geometric::RRT::~RRT()
+ompl::geometric::RTP::~RTP()
 {
     freeMemory();
 }
 
-void ompl::geometric::RRT::clear()
+void ompl::geometric::RTP::clear()
 {
     Planner::clear();
     sampler_.reset();
@@ -38,7 +34,7 @@ void ompl::geometric::RRT::clear()
     lastGoalMotion_ = nullptr;
 }
 
-void ompl::geometric::RRT::setup()
+void ompl::geometric::RTP::setup()
 {
     Planner::setup();
     tools::SelfConfig sc(si_, getName());
@@ -49,7 +45,7 @@ void ompl::geometric::RRT::setup()
     nn_->setDistanceFunction([this](const Motion *a, const Motion *b) { return distanceFunction(a, b); });
 }
 
-void ompl::geometric::RRT::freeMemory()
+void ompl::geometric::RTP::freeMemory()
 {
     if (nn_)
     {
@@ -64,7 +60,7 @@ void ompl::geometric::RRT::freeMemory()
     }
 }
 
-ompl::base::PlannerStatus ompl::geometric::RRT::solve(const base::PlannerTerminationCondition &ptc)
+ompl::base::PlannerStatus ompl::geometric::RTP::solve(const base::PlannerTerminationCondition &ptc)
 {
     checkValidity();
     base::Goal *goal = pdef_->getGoal().get();
@@ -103,8 +99,13 @@ ompl::base::PlannerStatus ompl::geometric::RRT::solve(const base::PlannerTermina
         else
             sampler_->sampleUniform(rstate);
 
-        /* find closest state in the tree */
-        Motion *nmotion = nn_->nearest(rmotion);
+        /* sample random configuration in graph */
+        std::vector<Motion*> nbh;
+        nn_->nearestK(rmotion, nn_->size(), nbh);
+        Motion *nmotion = nbh.at(rng_.uniformInt(0, nn_->size() - 1));
+
+        // /* find closest state in the tree */
+        // Motion *nmotion = nn_->nearest(rmotion);
         base::State *dstate = rstate;
 
         /* find state to add */
@@ -117,33 +118,33 @@ ompl::base::PlannerStatus ompl::geometric::RRT::solve(const base::PlannerTermina
 
         if (si_->checkMotion(nmotion->state, dstate))
         {
-            if (addIntermediateStates_)
-            {
-                std::vector<base::State *> states;
-                const unsigned int count = si_->getStateSpace()->validSegmentCount(nmotion->state, dstate);
+            // if (addIntermediateStates_)
+            // {
+            //     std::vector<base::State *> states;
+            //     const unsigned int count = si_->getStateSpace()->validSegmentCount(nmotion->state, dstate);
 
-                if (si_->getMotionStates(nmotion->state, dstate, states, count, true, true))
-                    si_->freeState(states[0]);
+            //     if (si_->getMotionStates(nmotion->state, dstate, states, count, true, true))
+            //         si_->freeState(states[0]);
 
-                for (std::size_t i = 1; i < states.size(); ++i)
-                {
-                    auto *motion = new Motion;
-                    motion->state = states[i];
-                    motion->parent = nmotion;
-                    nn_->add(motion);
+            //     for (std::size_t i = 1; i < states.size(); ++i)
+            //     {
+            //         auto *motion = new Motion;
+            //         motion->state = states[i];
+            //         motion->parent = nmotion;
+            //         nn_->add(motion);
 
-                    nmotion = motion;
-                }
-            }
-            else
-            {
-                auto *motion = new Motion(si_);
-                si_->copyState(motion->state, dstate);
-                motion->parent = nmotion;
-                nn_->add(motion);
+            //         nmotion = motion;
+            //     }
+            // }
+            // else
+            // {
+            auto *motion = new Motion(si_);
+            si_->copyState(motion->state, dstate);
+            motion->parent = nmotion;
+            nn_->add(motion);
 
-                nmotion = motion;
-            }
+            nmotion = motion;
+            // }
 
             double dist = 0.0;
             bool sat = goal->isSatisfied(nmotion->state, &dist);
@@ -199,7 +200,7 @@ ompl::base::PlannerStatus ompl::geometric::RRT::solve(const base::PlannerTermina
     return {solved, approximate};
 }
 
-void ompl::geometric::RRT::getPlannerData(base::PlannerData &data) const
+void ompl::geometric::RTP::getPlannerData(base::PlannerData &data) const
 {
     Planner::getPlannerData(data);
 
