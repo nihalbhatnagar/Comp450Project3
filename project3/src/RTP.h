@@ -1,7 +1,7 @@
 ///////////////////////////////////////
 // COMP/ELEC/MECH 450/550
 // Project 3
-// Authors: FILL ME OUT!!
+// Authors: Parv Shrivastava and Nihal Bhatnagar
 //////////////////////////////////////
 
 #ifndef RANDOM_TREE_H
@@ -15,23 +15,12 @@ namespace ompl
     namespace geometric
     {
         /**
-           @anchor gRRT
+           @anchor gRTP
            @par Short description
-           RRT is a tree-based motion planner that uses the following
-           idea: RRT samples a random state @b qr in the state space,
-           then finds the state @b qc among the previously seen states
-           that is closest to @b qr and expands from @b qc towards @b
-           qr, until a state @b qm is reached. @b qm is then added to
-           the exploration tree.
-           @par External documentation
-           J. Kuffner and S.M. LaValle, RRT-connect: An efficient approach to single-query path planning, in <em>Proc.
-           2000 IEEE Intl. Conf. on Robotics and Automation</em>, pp. 995–1001, Apr. 2000. DOI:
-           [10.1109/ROBOT.2000.844730](http://dx.doi.org/10.1109/ROBOT.2000.844730)<br>
-           [[PDF]](http://ieeexplore.ieee.org/ielx5/6794/18246/00844730.pdf?tp=&arnumber=844730&isnumber=18246)
-           [[more]](http://msl.cs.uiuc.edu/~lavalle/rrtpubs.html)
+           RTP is a tree-based motion planner.
         */
 
-        /** \brief Rapidly-exploring Random Trees */
+        /** \brief Random Tree Planner */
         class RTP : public base::Planner
         {
         public:
@@ -82,17 +71,6 @@ namespace ompl
                 return maxDistance_;
             }
 
-            /** \brief Set a different nearest neighbors datastructure */
-            template <template <typename T> class NN>
-            void setNearestNeighbors()
-            {
-                if (nn_ && nn_->size() != 0)
-                    OMPL_WARN("Calling setNearestNeighbors will clear all states.");
-                clear();
-                nn_ = std::make_shared<NN<Motion *>>();
-                setup();
-            }
-
             void setup() override;
 
         protected:
@@ -122,17 +100,11 @@ namespace ompl
             /** \brief Free the memory allocated by this planner */
             void freeMemory();
 
-            /** \brief Compute distance between motions (actually distance between contained states) */
-            double distanceFunction(const Motion *a, const Motion *b) const
-            {
-                return si_->distance(a->state, b->state);
-            }
-
             /** \brief State sampler */
             base::StateSamplerPtr sampler_;
 
-            /** \brief A nearest-neighbors datastructure containing the tree of motions */
-            std::shared_ptr<NearestNeighbors<Motion *>> nn_;
+            /** \brief A list containing thes tree of motions */
+            std::vector<Motion *> graph_;
 
             /** \brief The fraction of time the goal is picked as the state to expand towards (if such a state is
              * available) */
