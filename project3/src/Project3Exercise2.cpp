@@ -26,8 +26,6 @@ void planPoint(const std::vector<Rectangle> &obstacles)
     bounds.setLow(-1);
     bounds.setHigh(3);
 
-    for (auto i: obstacles)
-        std::cout <<  i.x + ' ' + i.y + ' '<< ' ';
 
  
     space->setBounds(bounds);
